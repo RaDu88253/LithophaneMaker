@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
 #include "stl_generator.h"
 
 struct vertex generate_normal(struct vertex v1, struct vertex v2, struct vertex v3){
@@ -14,6 +16,7 @@ struct vertex generate_normal(struct vertex v1, struct vertex v2, struct vertex 
 
 };
 
+
 void add_facet(FILE *output, struct vertex v1, struct vertex v2, struct vertex v3){
 
     struct vertex normal = generate_normal(v1, v2, v3);
@@ -28,16 +31,17 @@ void add_facet(FILE *output, struct vertex v1, struct vertex v2, struct vertex v
 
 }
 
-void create_rectangle(FILE *output, struct vertex v11, struct vertex v12, struct vertex v21, struct vertex v22){
-    struct vertex aux;
-    aux.x = (v11.x + v12.x + v21.x + v22.x) / 4;
-    aux.y = (v11.y + v12.y + v21.y + v22.y) / 4;
-    aux.z = (v11.z + v12.z + v21.z + v22.z) / 4;
+void create_rectangle(FILE *output, struct vertex upper_left, struct vertex upper_right, struct vertex lower_left, struct vertex lower_right){
 
-    add_facet(output, v11, v12, aux);
-    add_facet(output, v12, v22, aux);
-    add_facet(output, v22, v21, aux);
-    add_facet(output, v21, v11, aux);
+    struct vertex middle;
+    middle.x = (upper_left.x + upper_right.x + lower_left.x + lower_right.x) / 4;
+    middle.y = (upper_left.y + upper_right.y + lower_left.y + lower_right.y) / 4;
+    middle.z = (upper_left.z + upper_right.z + lower_left.z + lower_right.z) / 4;
+
+    add_facet(output, upper_left, upper_right, middle);
+    add_facet(output, upper_right, lower_right, middle);
+    add_facet(output, lower_right, lower_left, middle);
+    add_facet(output, lower_left, upper_left, middle);
 
 }
 

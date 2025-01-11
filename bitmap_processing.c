@@ -7,7 +7,7 @@ uint32_t read_little_endian_unsigned_int_from_keyboard(uint8_t size_in_bytes){
     for (int i = 0; i < size_in_bytes; i++){
         uint32_t aux;
         scanf("%x", &aux);
-        res += aux * pow(256, i);
+        res += aux * (uint32_t)(pow(256, i));
     }
     return res;
 }
@@ -15,11 +15,11 @@ uint32_t read_little_endian_unsigned_int(FILE *input, uint8_t size_in_bytes){
     uint32_t res = 0;
     for (int i = 0; i < size_in_bytes; i++){
         uint32_t aux = fgetc(input);
-        res += aux * pow(256, i);
+        res += aux * (uint32_t)(pow(256, i));
     }
     return res;
 }
- void read_bitmap_header(FILE *input, struct file_info *fisier){
+ void read_bitmap_header(FILE *input, struct bmp_file_info *fisier){
     int byte1, byte2;
     byte1 = fgetc(input);
     byte2 = fgetc(input);
@@ -33,7 +33,7 @@ void read_redundant_bytes(FILE *input, uint32_t number_of_bytes){
     for(int i = 0; i < number_of_bytes; i++)
         fgetc(input);
 }
-void read_DIB_header(FILE *input, struct file_info *fisier){
+void read_DIB_header(FILE *input, struct bmp_file_info *fisier){
     int32_t header_size = (int) read_little_endian_unsigned_int(input, 4);
     fisier -> DIB_header_size = header_size;
     header_size -= 4;
@@ -70,10 +70,10 @@ void read_DIB_header(FILE *input, struct file_info *fisier){
         header_size = 0;
     }
 }
-void calculate_row_size(struct file_info *fisier){
+void calculate_row_size(struct bmp_file_info *fisier){
     fisier -> row_size = ((fisier -> bits_per_pixel) * (fisier -> width) + 31) / 32 * 4;
 }
-void read_pixel_array(FILE *input,struct file_info *fisier, uint8_t *grayscale_image){
+void read_pixel_array(FILE *input, struct bmp_file_info *fisier, uint8_t *grayscale_image){
     int32_t rows_to_read = fisier -> height;
     int32_t pixels_per_row = fisier -> width;
     int32_t row_size = (int) (fisier -> row_size);

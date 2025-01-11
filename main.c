@@ -1,21 +1,42 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "stl_generator.h"
 #include "bitmap_processing.h"
 
+#define STL_FILE_START "solid lithophane\n"
+#define STL_FILE_END "endsolid lithophane"
+#define MAX_COLOR_VALUE 255
+
 int main(void) {
 
-    FILE *output;
-    char output_file_path[250] = "..\\output.stl";
-    output = fopen(output_file_path, "w");
+    struct stl_file_parameters params;
 
-    FILE *input;
-    char input_file_path[250] = "..\\mona-lisa-gioconda-1.bmp";
-    input = fopen(input_file_path, "rb");
-    struct file_info fisier;
+    strcpy(params.input_file_path, "..\\TajMahal.bmp");
+    strcpy(params.output_file_path, "..\\TajMahal.stl");
+
+    params.block_size = 1;
+
+    params.lithophane_width = 160; //mm
+    params.thickness = 2.3; //mm
+    params.lithophane_depth =1.8; //m
+    params.z_ratio = params.lithophane_depth / MAX_COLOR_VALUE;
+    params.base_z = params.lithophane_depth - params.thickness;
+
+    create_stl_file(params);
+
+    return 0;
+}
+
+void create_stl_file(struct stl_file_parameters params){
+
+    FILE *input, *output;
+    input = fopen(params.input_file_path, "rb");
+    output = fopen(params.output_file_path, "w");
+    struct bmp_file_info fisier;
     if (input == NULL) {
         printf("FISIERUL NU EXISTA");
-        return 0;
+        return;
     }
     read_bitmap_header(input, &fisier);
     read_DIB_header(input, &fisier);
@@ -25,121 +46,116 @@ int main(void) {
 
     read_pixel_array(input, &fisier, grayscale_image);
 
-    int32_t block_size = 2;
-
-    double lithophane_width = 60; //mm
-    double lithophane_height = 1.00 * lithophane_width * fisier.height / fisier.width;
-    double thickness = 2.4; //mm
-    double lithophane_depth = 1.5; //m
-    double z_ratio = lithophane_depth / 255;
-    double base_z = lithophane_depth - thickness;
-
-    fprintf(output, "solid lithophane\n");
-    struct vertex upper_left, upper_right, lower_left, lower_right;
-    for(int32_t i = block_size; i < fisier.height; i += block_size){
-        for(int32_t j = block_size; j < fisier.width; j += block_size){
-            struct vertex v11, v12, v21, v22;
-
-            v11.x = (double) ((j - block_size) * (lithophane_width / fisier.width));
-            v11.y = (double) ((fisier.height - i + block_size) * (lithophane_height / fisier.height));
-            v11.z = 255;
-            v11.z -= (double) ((grayscale_image[(i - block_size) * fisier.width + j - block_size]));
-            v11.z *= z_ratio;
-
-            v12.x = (double) ((j) * (lithophane_width / fisier.width));
-            v12.y = (double) ((fisier.height - i + block_size) * (lithophane_height / fisier.height));
-            v12.z = 255;
-            v12.z -= (double) ((grayscale_image[(i - block_size) * fisier.width + j]));
-            v12.z *= z_ratio;
-
-            v21.x = (double) ((j - block_size) * (lithophane_width / fisier.width));
-            v21.y = (double) ((fisier.height - i) * (lithophane_height / fisier.height));
-            v21.z = 255;
-            v21.z -= (double) ((grayscale_image[(i) * fisier.width + j - block_size]));
-            v21.z *= z_ratio;
-
-            v22.x = (double) ((j) * (lithophane_width / fisier.width));
-            v22.y = (double) ((fisier.height - i) * (lithophane_height / fisier.height));
-            v22.z = 255;
-            v22.z -= (double) ((grayscale_image[(i) * fisier.width + j]));
-            v22.z *= z_ratio;
-
-            create_rectangle(output, v11, v12, v21, v22);
-
-            if(i == block_size){
-                struct vertex v11c, v12c, v21c, v22c;
-
-                v11c = v11;
-                v21c = v11c;
-                v21c.z = base_z;
+    params.lithophane_height = (double) params.lithophane_width * fisier.height / fisier.width;
 
 
-                v12c = v12;
-                v22c = v12c;
-                v22c.z = base_z;
+    fprintf(output, STL_FILE_START);
+    struct vertex border_upper_left, border_upper_right, border_lower_left, border_lower_right;
+    for(int32_t i = params.block_size; i < fisier.height; i += params.block_size){
+        for(int32_t j = params.block_size; j < fisier.width; j += params.block_size){
+            struct vertex upper_left, upper_right, lower_left, lower_right;
 
-                create_rectangle(output, v11c, v12c, v21c, v22c);
-                if (j == block_size)
-                    upper_left = v21c;
-                if (j == block_size * ((fisier.width - 1) / block_size))
-                    upper_right = v22c;
+            upper_left.x = (double) ((j - params.block_size) * (params.lithophane_width / fisier.width));
+            upper_left.y = (double) ((fisier.height - i + params.block_size) * (params.lithophane_height / fisier.height));
+            upper_left.z = MAX_COLOR_VALUE;
+            upper_left.z -= (double) ((grayscale_image[(i - params.block_size) * fisier.width + j - params.block_size]));
+            upper_left.z *= params.z_ratio;
+
+            upper_right.x = (double) ((j) * (params.lithophane_width / fisier.width));
+            upper_right.y = (double) ((fisier.height - i + params.block_size) * (params.lithophane_height / fisier.height));
+            upper_right.z = MAX_COLOR_VALUE;
+            upper_right.z -= (double) ((grayscale_image[(i - params.block_size) * fisier.width + j]));
+            upper_right.z *= params.z_ratio;
+
+            lower_left.x = (double) ((j - params.block_size) * (params.lithophane_width / fisier.width));
+            lower_left.y = (double) ((fisier.height - i) * (params.lithophane_height / fisier.height));
+            lower_left.z = MAX_COLOR_VALUE;
+            lower_left.z -= (double) ((grayscale_image[(i) * fisier.width + j - params.block_size]));
+            lower_left.z *= params.z_ratio;
+
+            lower_right.x = (double) ((j) * (params.lithophane_width / fisier.width));
+            lower_right.y = (double) ((fisier.height - i) * (params.lithophane_height / fisier.height));
+            lower_right.z = MAX_COLOR_VALUE;
+            lower_right.z -= (double) ((grayscale_image[(i) * fisier.width + j]));
+            lower_right.z *= params.z_ratio;
+
+            create_rectangle(output, upper_left, upper_right, lower_left, lower_right);
+
+            if(i == params.block_size){
+                struct vertex upper_left_copy, upper_right_copy, lower_left_copy, lower_right_copy;
+
+                upper_left_copy = upper_left;
+                lower_left_copy = upper_left_copy;
+                lower_left_copy.z = params.base_z;
+
+
+                upper_right_copy = upper_right;
+                lower_right_copy = upper_right_copy;
+                lower_right_copy.z = params.base_z;
+
+                create_rectangle(output, upper_left_copy, upper_right_copy, lower_left_copy, lower_right_copy);
+                if (j == params.block_size)
+                    border_upper_left = lower_left_copy;
+                if (j == params.block_size * ((fisier.width - 1) / params.block_size))
+                    border_upper_right = lower_right_copy;
             }
-            if(j == block_size){
+            if(j == params.block_size){
 
-                struct vertex v11c, v12c, v21c, v22c;
+                struct vertex upper_left_copy, upper_right_copy, lower_left_copy, lower_right_copy;
 
-                v11c = v11;
-                v21c = v21;
+                upper_left_copy = upper_left;
+                lower_left_copy = lower_left;
 
-                v22c = v21c;
-                v22c.z = base_z;
+                lower_right_copy = lower_left_copy;
+                lower_right_copy.z = params.base_z;
 
-                v12c = v11c;
-                v12c.z = base_z;
+                upper_right_copy = upper_left_copy;
+                upper_right_copy.z = params.base_z;
 
-                create_rectangle(output, v11c, v12c, v21c, v22c);
+                create_rectangle(output, upper_left_copy, upper_right_copy, lower_left_copy, lower_right_copy);
             }
 
-            if(i == block_size * ((fisier.height - 1) / block_size)){
+            if(i == params.block_size * ((fisier.height - 1) / params.block_size)){
 
-                struct vertex v11c, v12c, v21c, v22c;
+                struct vertex upper_left_copy, upper_right_copy, lower_left_copy, lower_right_copy;
 
-                v21c = v21;
-                v11c = v21c;
-                v11c.z = base_z;
+                lower_left_copy = lower_left;
+                upper_left_copy = lower_left_copy;
+                upper_left_copy.z = params.base_z;
 
-                v22c = v22;
-                v12c = v22c;
-                v12c.z = base_z;
+                lower_right_copy = lower_right;
+                upper_right_copy = lower_right_copy;
+                upper_right_copy.z = params.base_z;
 
-                create_rectangle(output, v11c, v12c, v21c, v22c);
+                create_rectangle(output, upper_left_copy, upper_right_copy, lower_left_copy, lower_right_copy);
 
-                if(j == block_size)
-                    lower_left = v11c;
-                if(j == block_size * ((fisier.width - 1) / block_size))
-                    lower_right = v12c;
+                if(j == params.block_size)
+                    border_lower_left = upper_left_copy;
+                if(j == params.block_size * ((fisier.width - 1) / params.block_size))
+                    border_lower_right = upper_right_copy;
             }
-            if(j == block_size * ((fisier.width - 1) / block_size)){
-                struct vertex v11c, v12c, v21c, v22c;
+            if(j == params.block_size * ((fisier.width - 1) / params.block_size)){
 
-                v12c = v12;
-                v22c = v22;
+                struct vertex upper_left_copy, upper_right_copy, lower_left_copy, lower_right_copy;
 
-                v11c = v12c;
-                v11c.z = base_z;
+                upper_right_copy = upper_right;
+                lower_right_copy = lower_right;
 
-                v21c = v22c;
-                v21c.z = base_z;
+                upper_left_copy = upper_right_copy;
+                upper_left_copy.z = params.base_z;
 
-                create_rectangle(output, v11c, v12c, v21c, v22c);
+                lower_left_copy = lower_right_copy;
+                lower_left_copy.z = params.base_z;
+
+                create_rectangle(output, upper_left_copy, upper_right_copy, lower_left_copy, lower_right_copy);
             }
 
         }
     }
-    create_rectangle(output, upper_left, upper_right, lower_left, lower_right);
-    fprintf(output, "endsolid lithophane");
+    create_rectangle(output, border_upper_left, border_upper_right, border_lower_left, border_lower_right);
+    fprintf(output, STL_FILE_END);
 
     fclose(input);
     fclose(output);
-    return 0;
 }
+
