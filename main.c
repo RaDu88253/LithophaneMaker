@@ -10,25 +10,28 @@
 
 int main(void) {
 
-    struct stl_file_parameters params;
+    struct stl_file_parameters params;  //!< Wrapper for output file parameters
 
     strcpy(params.input_file_path, "..\\TajMahal.bmp");
     strcpy(params.output_file_path, "..\\TajMahal.stl");
 
-    params.block_size = 1;
+    params.block_size = 1; /**<\brief A resolution denominator
+ *
+ *  The output file will have around 4 * length[pixels] * width[pixels] / (block_size ^ 2) faces*/
 
-    params.lithophane_width = 160; //mm
-    params.thickness = 2.3; //mm
-    params.lithophane_depth =1.8; //m
-    params.z_ratio = params.lithophane_depth / MAX_COLOR_VALUE;
-    params.base_z = params.lithophane_depth - params.thickness;
+    params.lithophane_width = 160; //!< Width in millimetres of the output
+    params.thickness = 2.3; //!< Thickness in millimetres of the output. This is the thickness of the "black"
+    params.lithophane_depth =1.8; //!< Variance in the color thickness. The white will have the thickness if thickness - lithophane_depth
+    params.z_ratio = params.lithophane_depth / MAX_COLOR_VALUE; //!< A factor to normalize color into thickness
+    params.base_z = params.lithophane_depth - params.thickness; //!< Z coordinate of the flat face
 
     create_stl_file(params);
 
     return 0;
 }
 
-void create_stl_file(struct stl_file_parameters params){
+//! The function that generates the file itself
+void create_stl_file(struct stl_file_parameters params/**<[in] wrapper for output file parameters*/){
 
     FILE *input, *output;
     input = fopen(params.input_file_path, "rb");

@@ -4,7 +4,10 @@
 #include <stdint.h>
 #include <stdio.h>
 
+
+//! Wrapper for bitmap file parameters
 struct bmp_file_info{
+
     uint8_t is_bitmap;
     uint32_t starting_address; //the offset where the pixel array starts
     uint32_t DIB_header_size;

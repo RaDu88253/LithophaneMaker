@@ -5,10 +5,12 @@
 #include <stdint.h>
 #include "bitmap_processing.h"
 
+//! Wrapper for a 3-dimensional vertex
 struct vertex{
     double x, y, z;
 };
 
+//! Wrapper for output file parameters
 struct stl_file_parameters{
     char input_file_path[100], output_file_path[100];
     double lithophane_width, lithophane_height, thickness, lithophane_depth, z_ratio, base_z;

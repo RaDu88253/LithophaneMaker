@@ -1,17 +1,8 @@
 #include "bitmap_processing.h"
 #include <math.h>
 
-
-uint32_t read_little_endian_unsigned_int_from_keyboard(uint8_t size_in_bytes){
-    uint32_t res = 0;
-    for (int i = 0; i < size_in_bytes; i++){
-        uint32_t aux;
-        scanf("%x", &aux);
-        res += aux * (uint32_t)(pow(256, i));
-    }
-    return res;
-}
-uint32_t read_little_endian_unsigned_int(FILE *input, uint8_t size_in_bytes){
+//! Reads size_in_bytes bytes from the input file parameter and returns the corresponding little endian unsigned integer
+uint32_t read_little_endian_unsigned_int(FILE *input/**<[in] file to read from<*/, uint8_t size_in_bytes /**<[in] the number of bytes to read, must be less than 4*/){
     uint32_t res = 0;
     for (int i = 0; i < size_in_bytes; i++){
         uint32_t aux = fgetc(input);
@@ -19,7 +10,9 @@ uint32_t read_little_endian_unsigned_int(FILE *input, uint8_t size_in_bytes){
     }
     return res;
 }
- void read_bitmap_header(FILE *input, struct bmp_file_info *fisier){
+
+//! Reads the header of the input file to make sure it is a bitmap
+ void read_bitmap_header(FILE *input/**<[in] bitmap file to read from*/, struct bmp_file_info *fisier/**<[out] wrapper for file-specific parameters*/){
     int byte1, byte2;
     byte1 = fgetc(input);
     byte2 = fgetc(input);
@@ -29,11 +22,18 @@ uint32_t read_little_endian_unsigned_int(FILE *input, uint8_t size_in_bytes){
         fisier -> is_bitmap = 0;
      read_redundant_bytes(input, 12);
 }
-void read_redundant_bytes(FILE *input, uint32_t number_of_bytes){
+
+/** \brief Moves the file "cursor" to the right
+
+    I did not know of ftell and fseek when writing this project
+ */
+void read_redundant_bytes(FILE *input/**<[in] file to read from*/, uint32_t number_of_bytes/**<[in] how many bytes to read*/){
     for(int i = 0; i < number_of_bytes; i++)
         fgetc(input);
 }
-void read_DIB_header(FILE *input, struct bmp_file_info *fisier){
+
+//! Reads and extracts relevant info from the DIB header of the input file
+void read_DIB_header(FILE *input/**<[in] file to read from*/, struct bmp_file_info *fisier/**<[out] wrapper for file-specific parameters */){
     int32_t header_size = (int) read_little_endian_unsigned_int(input, 4);
     fisier -> DIB_header_size = header_size;
     header_size -= 4;
@@ -70,10 +70,14 @@ void read_DIB_header(FILE *input, struct bmp_file_info *fisier){
         header_size = 0;
     }
 }
-void calculate_row_size(struct bmp_file_info *fisier){
+
+//! Calculates the size of a row of pixels in bytes
+void calculate_row_size(struct bmp_file_info *fisier /**<[in,out] wrapper for file-specific parameters */){
     fisier -> row_size = ((fisier -> bits_per_pixel) * (fisier -> width) + 31) / 32 * 4;
 }
-void read_pixel_array(FILE *input, struct bmp_file_info *fisier, uint8_t *grayscale_image){
+
+//! Reads the bytes representing th e pixel array from the given file.
+void read_pixel_array(FILE *input/**<[in] file to read from*/, struct bmp_file_info *fisier /**<[in] wrapper for file-specific parameters*/, uint8_t *grayscale_image /**<[out] an array of grey pixel values*/){
     int32_t rows_to_read = fisier -> height;
     int32_t pixels_per_row = fisier -> width;
     int32_t row_size = (int) (fisier -> row_size);
